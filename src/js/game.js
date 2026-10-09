@@ -114,14 +114,23 @@ function ghostTarget( kind, game, blinky ) {
   const p = game.pacman;
   const px = Math.round( p.x );
   const py = Math.round( p.y );
-  // Paso 2: solo blinky (hunter puro). Pinky/Inky/Clyde se añaden en pasos 3-4.
-  // Fallback conservador: posicion de PacMan.
+  // Targets arcade por kind. Fallback conservador: posicion de PacMan.
   if ( !kind || kind === 'blinky' ) return { x: px, y: py };
   if ( kind === 'hunter' ) return { x: px, y: py };
   if ( kind === 'pinky' ) {
     const d = DIRS[ p.dir ] || { x: 0, y: 0 };
     return { x: px + 4 * d.x, y: py + 4 * d.y };
   }
+  if ( kind === 'inky' ) {
+    const d = DIRS[ p.dir ] || { x: 0, y: 0 };
+    const ax = px + 2 * d.x;
+    const ay = py + 2 * d.y;
+    if ( !blinky ) return { x: px, y: py };
+    const bx = Math.round( blinky.x );
+    const by = Math.round( blinky.y );
+    return { x: 2 * ax - bx, y: 2 * ay - by };
+  }
+  if ( kind === 'clyde' ) return { x: px, y: py };
   return { x: px, y: py };
 }
 
@@ -135,7 +144,18 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' || g.kind === 'blinky' || g.kind === 'pinky' ) {
+  // Clyde: cerca (<=8 Manhattan) se dispersa al azar, lejos persigue como hunter.
+  if ( g.kind === 'clyde' ) {
+    const px0 = Math.round( p.x );
+    const py0 = Math.round( p.y );
+    const dist0 = Math.abs( Math.round( g.x ) - px0 ) + Math.abs( Math.round( g.y ) - py0 );
+    if ( dist0 <= 8 ) {
+      g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+      return;
+    }
+  }
+
+  if ( g.kind === 'hunter' || g.kind === 'blinky' || g.kind === 'pinky' || g.kind === 'inky' || g.kind === 'clyde' ) {
     const blinky = game.ghosts.find( ( o ) => o.kind === 'blinky' ) || null;
     const target = ghostTarget( g.kind, game, blinky );
     const px = target.x;
