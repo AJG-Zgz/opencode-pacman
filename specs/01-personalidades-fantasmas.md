@@ -1,6 +1,6 @@
 # SPEC 01 — Cuatro fantasmas con personalidades arcade
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** (ninguna)
 > **Date:** 2026-10-09
 > **Objective:** Dotar al juego de 4 fantasmas con conductas distintas estilo arcade, uno de ellos (Blinky) persiguiendo agresivamente a PacMan.
