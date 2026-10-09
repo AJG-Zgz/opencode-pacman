@@ -110,6 +110,17 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+function ghostTarget( kind, game, blinky ) {
+  const p = game.pacman;
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+  // Paso 2: solo blinky (hunter puro). Pinky/Inky/Clyde se añaden en pasos 3-4.
+  // Fallback conservador: posicion de PacMan.
+  if ( !kind || kind === 'blinky' ) return { x: px, y: py };
+  if ( kind === 'hunter' ) return { x: px, y: py };
+  return { x: px, y: py };
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
   const p = game.pacman;
@@ -120,9 +131,11 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
-    const px = Math.round( p.x );
-    const py = Math.round( p.y );
+  if ( g.kind === 'hunter' || g.kind === 'blinky' ) {
+    const blinky = game.ghosts.find( ( o ) => o.kind === 'blinky' ) || null;
+    const target = ghostTarget( g.kind, game, blinky );
+    const px = target.x;
+    const py = target.y;
     let best = choices[ 0 ];
     let bestDist = Infinity;
     for ( const dir of choices ) {
