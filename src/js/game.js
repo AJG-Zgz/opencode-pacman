@@ -118,6 +118,10 @@ function ghostTarget( kind, game, blinky ) {
   // Fallback conservador: posicion de PacMan.
   if ( !kind || kind === 'blinky' ) return { x: px, y: py };
   if ( kind === 'hunter' ) return { x: px, y: py };
+  if ( kind === 'pinky' ) {
+    const d = DIRS[ p.dir ] || { x: 0, y: 0 };
+    return { x: px + 4 * d.x, y: py + 4 * d.y };
+  }
   return { x: px, y: py };
 }
 
@@ -131,7 +135,7 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' || g.kind === 'blinky' ) {
+  if ( g.kind === 'hunter' || g.kind === 'blinky' || g.kind === 'pinky' ) {
     const blinky = game.ghosts.find( ( o ) => o.kind === 'blinky' ) || null;
     const target = ghostTarget( g.kind, game, blinky );
     const px = target.x;
