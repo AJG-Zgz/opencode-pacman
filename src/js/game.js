@@ -195,6 +195,29 @@ function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
 
+  // SPEC 02 paso 3 — espera en el pen: rebote vertical hasta que expire exitTimer.
+  if ( isInPen( g ) && ( g.exitTimer || 0 ) > 0 ) {
+    g.exitTimer--;
+    if ( aligned( g.x ) && aligned( g.y ) ) {
+      g.x = Math.round( g.x );
+      g.y = Math.round( g.y );
+      // Solo vertical. Mantiene dir si puede, si no invierte (excepción 180º
+      // limitada al pen en espera).
+      const want = ( g.dir === 'up' || g.dir === 'down' ) ? g.dir : 'up';
+      if ( canMove( grid, g.x, g.y, want, 'ghost' ) ) {
+        g.dir = want;
+      } else if ( canMove( grid, g.x, g.y, OPPOSITE[ want ], 'ghost' ) ) {
+        g.dir = OPPOSITE[ want ];
+      } else {
+        return;
+      }
+    }
+    const d = DIRS[ g.dir ];
+    g.x += d.x * g.speed;
+    g.y += d.y * g.speed;
+    return;
+  }
+
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
