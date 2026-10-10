@@ -1,6 +1,6 @@
 # SPEC 02 — Salida escalonada de fantasmas del pen
 
-> **Status:** Aprobado
+> **Status:** Implementada
 > **Depends on:** SPEC 01
 > **Date:** 2026-10-09
 > **Objective:** Hacer que los 4 fantasmas salgan del pen al pasillo encima de la puerta con retardo escalonado en vez de quedarse atrapados dentro.
