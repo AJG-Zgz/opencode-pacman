@@ -28,7 +28,7 @@
 
 ```js
 // src/js/game.js — añadidos, MAZE y GHOST_STARTS intactos
-const PEN = { xMin: 11, xMax: 16, yMin: 13, yMax: 15 };
+const PEN = { xMin: 11, xMax: 16, yMin: 12, yMax: 15 }; // incluye la fila-puerta 12; salido = y <= 11
 const PEN_EXIT = { x: 13, y: 11 }; // pasillo encima de la puerta 3
 const GHOST_EXIT_DELAY = { pinky: 0, blinky: 60, inky: 180, clyde: 360 }; // frames a 60fps
 
