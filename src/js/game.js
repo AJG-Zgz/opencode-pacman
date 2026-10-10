@@ -13,6 +13,18 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
+const PEN = { xMin: 11, xMax: 16, yMin: 13, yMax: 15 };
+const PEN_EXIT = { x: 13, y: 11 }; // pasillo encima de la puerta 3
+const GHOST_EXIT_DELAY = { pinky: 0, blinky: 60, inky: 180, clyde: 360 }; // frames a 60fps
+
+// Dentro del pen? Usa celdas redondeadas para posiciones fraccionales.
+function isInPen( g ) {
+  const cx = Math.round( g.x );
+  const cy = Math.round( g.y );
+  return cx >= PEN.xMin && cx <= PEN.xMax && cy >= PEN.yMin && cy <= PEN.yMax;
+}
+
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
 function createGame() {
