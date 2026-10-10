@@ -13,6 +13,19 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
+// PEN incluye la fila-puerta 12: salido = y <= 11 (decisión opción 1).
+const PEN = { xMin: 11, xMax: 16, yMin: 12, yMax: 15 };
+const PEN_EXIT = { x: 13, y: 11 }; // pasillo encima de la puerta 3
+const GHOST_EXIT_DELAY = { pinky: 0, blinky: 60, inky: 180, clyde: 360 }; // frames a 60fps
+
+// Dentro del pen? Usa celdas redondeadas para posiciones fraccionales.
+function isInPen( g ) {
+  const cx = Math.round( g.x );
+  const cy = Math.round( g.y );
+  return cx >= PEN.xMin && cx <= PEN.xMax && cy >= PEN.yMin && cy <= PEN.yMax;
+}
+
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
 function createGame() {
@@ -42,6 +55,7 @@ function createGame() {
       dir: 'up',
       speed: GHOST_SPEED,
       kind: g.kind,
+      exitTimer: GHOST_EXIT_DELAY[ g.kind ] || 0,
     } ) ),
   };
 }
@@ -144,6 +158,23 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
+  // SPEC 02 paso 4 — dentro del pen con timer expirado: target temporal PEN_EXIT.
+  // Minimiza Manhattan con la misma regla sin-180º; al salir retoma SPEC 01.
+  if ( isInPen( g ) && ( g.exitTimer || 0 ) <= 0 ) {
+    let best = choices[ 0 ];
+    let bestDist = Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const dist = Math.abs( ( g.x + d.x ) - PEN_EXIT.x ) + Math.abs( ( g.y + d.y ) - PEN_EXIT.y );
+      if ( dist < bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    g.dir = best;
+    return;
+  }
+
   // Clyde: cerca (<=8 Manhattan) se dispersa al azar, lejos persigue como hunter.
   if ( g.kind === 'clyde' ) {
     const px0 = Math.round( p.x );
@@ -182,6 +213,35 @@ function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
 
+  // SPEC 02 paso 3 — espera en el pen: rebote vertical hasta que expire exitTimer.
+  if ( isInPen( g ) && ( g.exitTimer || 0 ) > 0 ) {
+    g.exitTimer--;
+    if ( aligned( g.x ) && aligned( g.y ) ) {
+      g.x = Math.round( g.x );
+      g.y = Math.round( g.y );
+      // Solo vertical y sin cruzar la puerta: los destinos deben seguir en el
+      // pen para que la espera no se convierta en una salida anticipada
+      // (p. ej. inky arranca en la columna de la puerta).
+      const want = ( g.dir === 'up' || g.dir === 'down' ) ? g.dir : 'up';
+      const staysIn = ( dir ) => {
+        const d0 = DIRS[ dir ];
+        return canMove( grid, g.x, g.y, dir, 'ghost' ) &&
+          isInPen( { x: g.x + d0.x, y: g.y + d0.y } );
+      };
+      if ( staysIn( want ) ) {
+        g.dir = want;
+      } else if ( staysIn( OPPOSITE[ want ] ) ) {
+        g.dir = OPPOSITE[ want ];
+      } else {
+        return;
+      }
+    }
+    const d = DIRS[ g.dir ];
+    g.x += d.x * g.speed;
+    g.y += d.y * g.speed;
+    return;
+  }
+
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
@@ -205,6 +265,7 @@ function resetPositions( game ) {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
   } );
 }
 
