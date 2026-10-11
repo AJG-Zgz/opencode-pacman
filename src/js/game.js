@@ -319,6 +319,7 @@ function resetPositions( game ) {
     g.dir = 'up';
     g.curSpeed = GHOST_SPEED;
     g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
+    g.eaten = false; // SPEC 04 — morir con ojos en viaje los normaliza
   } );
 }
 
