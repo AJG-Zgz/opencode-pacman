@@ -178,6 +178,22 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
+  // SPEC 04 — ojos: viajan al interior de la jaula (antes que frightened y SPEC 02).
+  if ( g.eaten ) {
+    let best = choices[ 0 ];
+    let bestDist = Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const dist = Math.abs( ( g.x + d.x ) - EYES_TARGET.x ) + Math.abs( ( g.y + d.y ) - EYES_TARGET.y );
+      if ( dist < bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    g.dir = best;
+    return;
+  }
+
   // SPEC 03 — en frightened deambula al azar (respeta sin-180º y callejón).
   if ( game.frightenedTimer > 0 ) {
     g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
@@ -244,7 +260,7 @@ function moveGhost( game, g ) {
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
-    g.curSpeed = game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
+    g.curSpeed = g.eaten ? EYES_SPEED : game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
   }
   const speed = g.curSpeed;
 
