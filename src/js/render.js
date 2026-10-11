@@ -133,6 +133,12 @@ function drawGhost( ctx, g, color ) {
   ctx.closePath();
   ctx.fill();
 
+  drawEyes( ctx, g );
+}
+
+// SPEC 04 — solo ojos mirando segun direccion (sin cuerpo).
+function drawEyes( ctx, g ) {
+  const { cx, cy } = cellCenter( g.x, g.y );
   // ojos mirando segun direccion
   const dir = DIRS[ g.dir ] || { x: 0, y: 0 };
   const ex = dir.x * 1.6;
@@ -187,7 +193,11 @@ function draw( ctx, game, frame ) {
   drawDots( ctx, grid );
   drawPowerPellets( ctx, grid, frame );
   drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, ghostColor( game, i ) ) );
+  game.ghosts.forEach( ( g, i ) => {
+    // SPEC 04 — los ojos en viaje se dibujan sin cuerpo.
+    if ( g.eaten ) drawEyes( ctx, g );
+    else drawGhost( ctx, g, ghostColor( game, i ) );
+  } );
   drawHUD( ctx, game, W );
 }
 
