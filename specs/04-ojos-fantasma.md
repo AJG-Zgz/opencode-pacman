@@ -1,6 +1,6 @@
 # SPEC 04 — Ojos que regresan a la jaula
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01, SPEC 02, SPEC 03
 > **Date:** 2026-10-11
 > **Objective:** Al comer un fantasma azul se convierten en ojos que viajan rápido a la jaula y reaparecen con el retardo de SPEC 02.
@@ -55,14 +55,14 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] El juego carga `src/index.html` sin errores en consola.
-- [ ] Comer un fantasma azul suma 200 puntos y lo deja como ojos en el punto de captura (sin teletransporte).
-- [ ] Los ojos viajan visiblemente más rápido que pacman hacia la jaula, sin atravesar muros.
-- [ ] Los ojos cruzan la puerta `3` y entran a la jaula.
-- [ ] Pacman atraviesa los ojos sin perder vida ni ganar puntos, con y sin frightened activo.
-- [ ] Al entrar a la jaula el fantasma recupera cuerpo, color e IA y espera su retardo escalonado de SPEC 02 antes de salir.
-- [ ] Morir con ojos en viaje los devuelve al inicio como fantasmas normales.
-- [ ] Frightened (`0.0625`, aleatorio, 600 frames), pellets, `won`/`lost`, túnel fila 14 y velocidades base siguen intactos.
+- [x] El juego carga `src/index.html` sin errores en consola.
+- [x] Comer un fantasma azul suma 200 puntos y lo deja como ojos en el punto de captura (sin teletransporte).
+- [x] Los ojos viajan visiblemente más rápido que pacman hacia la jaula, sin atravesar muros.
+- [x] Los ojos cruzan la puerta `3` y entran a la jaula.
+- [x] Pacman atraviesa los ojos sin perder vida ni ganar puntos, con y sin frightened activo.
+- [x] Al entrar a la jaula el fantasma recupera cuerpo, color e IA y espera su retardo escalonado de SPEC 02 antes de salir.
+- [x] Morir con ojos en viaje los devuelve al inicio como fantasmas normales.
+- [x] Frightened (`0.0625`, aleatorio, 600 frames), pellets, `won`/`lost`, túnel fila 14 y velocidades base siguen intactos.
 
 ## Decisions
 
