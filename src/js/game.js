@@ -283,6 +283,7 @@ function resetPositions( game ) {
   p.y = PACMAN_START.y;
   p.dir = 'left';
   p.nextDir = null;
+  game.frightenedTimer = 0; // SPEC 03 — morir cancela el modo azul
   game.ghosts.forEach( ( g, i ) => {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
@@ -299,8 +300,22 @@ function update( game ) {
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
-  for ( const g of game.ghosts ) {
+  // SPEC 03 — el modo frightened descuenta un frame por update.
+  if ( game.frightenedTimer > 0 ) game.frightenedTimer--;
+
+  for ( let i = 0; i < game.ghosts.length; i++ ) {
+    const g = game.ghosts[ i ];
     if ( collides( game.pacman, g ) ) {
+      // SPEC 03 — en frightened pacman come al fantasma: +200 y respawn
+      // a su inicio con salida inmediata, sin perder vida.
+      if ( game.frightenedTimer > 0 ) {
+        game.score += GHOST_EAT_SCORE;
+        g.x = GHOST_STARTS[ i ].x;
+        g.y = GHOST_STARTS[ i ].y;
+        g.dir = 'up';
+        g.exitTimer = 0;
+        continue;
+      }
       game.lives--;
       if ( game.lives <= 0 ) {
         game.state = 'lost';
