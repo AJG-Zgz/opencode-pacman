@@ -19,6 +19,10 @@ const GHOST_EAT_SCORE = 200;
 const FRIGHTENED_DURATION = 600; // 10s * 60fps
 const GHOST_FRIGHTENED_SPEED = 0.0625; // 1/16: re-alinea cada 16 frames y < PACMAN_SPEED, cazables
 
+// SPEC 04 — ojos que regresan a la jaula (paso 1: constantes sin uso aún).
+const EYES_SPEED = 0.25; // 1/4: re-alinea cada 4 frames, más rápido que pacman
+const EYES_TARGET = { x: 13, y: 14 }; // interior de la jaula (puerta 3 pasable para fantasma)
+
 // SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
 // PEN incluye la fila-puerta 12: salido = y <= 11 (decisión opción 1).
 const PEN = { xMin: 11, xMax: 16, yMin: 12, yMax: 15 };
@@ -64,6 +68,7 @@ function createGame() {
       curSpeed: GHOST_SPEED, // velocidad efectiva; solo conmuta en aligned()
       kind: g.kind,
       exitTimer: GHOST_EXIT_DELAY[ g.kind ] || 0,
+      eaten: false, // SPEC 04 — true mientras viaja como ojos a la jaula
     } ) ),
   };
 }
