@@ -34,11 +34,13 @@
 const POWER_PELLET_SCORE = 50;
 const GHOST_EAT_SCORE = 200;
 const FRIGHTENED_DURATION = 600; // 10s * 60fps
-const GHOST_FRIGHTENED_SPEED = 0.06; // < PACMAN_SPEED (0.125), cazables
+const GHOST_FRIGHTENED_SPEED = 0.0625; // 1/16: re-alinea cada 16 frames y < PACMAN_SPEED (0.125), cazables
 
 // game amplía dos campos:
 // game.frightenedTimer: frames restantes de modo azul
 // game.dotsRemaining cuenta v === 2 || v === 4
+// ghost amplía un campo:
+// g.curSpeed: velocidad efectiva; solo conmuta en aligned()
 ```
 
 Convenciones:
@@ -53,7 +55,7 @@ Convenciones:
 1. Añadir tile `4` en `src/js/maze.js`: caso `'o'` en `parseTile` y 4 sustituciones en `MAZE_STR` (`(1,3)`, `(26,3)`, `(1,23)`, `(26,23)`). Verificación: abrir página, consola sin errores, el juego funciona igual (los `4` aún se dibujan como nada).
 2. Añadir constantes, `frightenedTimer: 0` en `createGame` y conteo de dots con `v === 2 || v === 4`. Verificación: `dotsRemaining` sube en 4 respecto a antes y el juego sigue igual.
 3. Comer power-pellet en `movePacman` (rama `aligned()` junto al dot): `grid = 0`, `score += 50`, `dotsRemaining--`, `frightenedTimer = 600`. Verificación: comer esquina da +50 y el timer queda en 600.
-4. Modo frightened en `decideGhost` (elección aleatoria sobre `choices`) y velocidad `0.06` en `moveGhost`. Verificación: tras pellet los 4 deambulan lento y al azar 10s y luego retoman su `kind` de SPEC 01.
+4. Modo frightened en `decideGhost` (elección aleatoria sobre `choices`) y velocidad `0.0625` (1/16) conmutada solo en `aligned()` vía `g.curSpeed` en `moveGhost`. Verificación: tras pellet los 4 deambulan lento y al azar 10s y luego retoman su `kind` de SPEC 01.
 5. Colisión comestible en `update`: si `frightenedTimer > 0`, `score += 200` y respawn de ese fantasma a `GHOST_STARTS[i]` con `exitTimer = 0`; si no, como ahora. Decrementar timer cada `update` y limpiarlo en `resetPositions`. Verificación: comer azul no quita vida, el fantasma reaparece y sale; morir cancela el azul.
 6. Render en `src/js/render.js`: `drawPowerPellets` (radio ~6, pulso por `frame`) y fantasmas en `#2121ff` (flash `#fff` alterno cada ~15 frames en los últimos 120). Verificación: 4 pellets grandes visibles y azules que avisan antes de expirar.
 
@@ -76,7 +78,9 @@ Convenciones:
 - **No:** 7s arcade ni 5s difícil. Menos margen de prueba.
 - **Sí:** tile `4` con carácter `'o'` en `MAZE_STR`. Reutiliza `game.grid` y el render condicional sin estructuras paralelas.
 - **No:** lista separada de pellets fuera del grid. Duplica fuente de verdad y rompe "dibujar desde `game.grid`".
-- **Sí:** velocidad frightened `0.06`. Más lenta que pacman (`0.125`) para que cazar sea posible, distinta de la base (`0.1`).
+- **Sí:** velocidad frightened `0.0625` (1/16). Más lenta que pacman (`0.125`) y re-alinea cada 16 frames dentro del régimen `aligned()`.
+- **No:** `0.06`. No es de la forma 1/n: desde celda entera nunca vuelve a `<1e-3` de un entero, el fantasma deja de decidir y atraviesa muros.
+- **Sí:** conmutar `g.curSpeed` solo en el centro (`aligned()`). Cambiar de velocidad a mitad de celda rompería el alineamiento con cualquier valor nuevo.
 - **Sí:** decisión aleatoria en frightened sobre `choices`. Reutiliza la regla sin-180º existente sin IA de huida nueva.
 - **No:** huida activa alejándose de pacman. Más código y más riesgo para el mismo efecto jugable.
 - **Sí:** `+200` fijo por fantasma. Simple y verificable.

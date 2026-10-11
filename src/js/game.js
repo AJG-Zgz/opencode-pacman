@@ -17,7 +17,7 @@ const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 const POWER_PELLET_SCORE = 50;
 const GHOST_EAT_SCORE = 200;
 const FRIGHTENED_DURATION = 600; // 10s * 60fps
-const GHOST_FRIGHTENED_SPEED = 0.06; // < PACMAN_SPEED, cazables
+const GHOST_FRIGHTENED_SPEED = 0.0625; // 1/16: re-alinea cada 16 frames y < PACMAN_SPEED, cazables
 
 // SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
 // PEN incluye la fila-puerta 12: salido = y <= 11 (decisión opción 1).
@@ -61,6 +61,7 @@ function createGame() {
       y: g.y,
       dir: 'up',
       speed: GHOST_SPEED,
+      curSpeed: GHOST_SPEED, // velocidad efectiva; solo conmuta en aligned()
       kind: g.kind,
       exitTimer: GHOST_EXIT_DELAY[ g.kind ] || 0,
     } ) ),
@@ -232,8 +233,15 @@ function decideGhost( game, g ) {
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
-  // SPEC 03 — más lento en frightened para que pacman pueda cazar.
-  const speed = game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : g.speed;
+  // SPEC 03 — la velocidad efectiva solo conmuta en el centro de la celda.
+  // Cambiarla a mitad de celda rompería aligned() y el fantasma dejaría de
+  // decidir en los cruces, atravesando muros.
+  if ( aligned( g.x ) && aligned( g.y ) ) {
+    g.x = Math.round( g.x );
+    g.y = Math.round( g.y );
+    g.curSpeed = game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
+  }
+  const speed = g.curSpeed;
 
   // SPEC 02 paso 3 — espera en el pen: rebote vertical hasta que expire exitTimer.
   if ( isInPen( g ) && ( g.exitTimer || 0 ) > 0 ) {
@@ -288,6 +296,7 @@ function resetPositions( game ) {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.curSpeed = GHOST_SPEED;
     g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
   } );
 }
