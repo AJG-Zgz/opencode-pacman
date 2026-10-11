@@ -13,6 +13,12 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// SPEC 03 — power-pellets y modo frightened.
+const POWER_PELLET_SCORE = 50;
+const GHOST_EAT_SCORE = 200;
+const FRIGHTENED_DURATION = 600; // 10s * 60fps
+const GHOST_FRIGHTENED_SPEED = 0.06; // < PACMAN_SPEED, cazables
+
 // SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
 // PEN incluye la fila-puerta 12: salido = y <= 11 (decisión opción 1).
 const PEN = { xMin: 11, xMax: 16, yMin: 12, yMax: 15 };
@@ -34,13 +40,14 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  for ( const row of grid ) for ( const v of row ) if ( v === 2 || v === 4 ) dots++;
 
   return {
     state: 'start',
     score: 0,
     lives: 3,
     dotsRemaining: dots,
+    frightenedTimer: 0, // SPEC 03 — frames restantes de modo azul
     grid,
     pacman: {
       x: PACMAN_START.x,
@@ -113,6 +120,13 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += 10;
       game.dotsRemaining--;
+    }
+    // SPEC 03 — comer power-pellet: activa el modo frightened.
+    if ( grid[ p.y ][ p.x ] === 4 ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += POWER_PELLET_SCORE;
+      game.dotsRemaining--;
+      game.frightenedTimer = FRIGHTENED_DURATION;
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
