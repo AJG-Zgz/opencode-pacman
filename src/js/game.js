@@ -172,6 +172,12 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
+  // SPEC 03 — en frightened deambula al azar (respeta sin-180º y callejón).
+  if ( game.frightenedTimer > 0 ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
+  }
+
   // SPEC 02 paso 4 — dentro del pen con timer expirado: target temporal PEN_EXIT.
   // Minimiza Manhattan con la misma regla sin-180º; al salir retoma SPEC 01.
   if ( isInPen( g ) && ( g.exitTimer || 0 ) <= 0 ) {
@@ -226,6 +232,8 @@ function decideGhost( game, g ) {
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
+  // SPEC 03 — más lento en frightened para que pacman pueda cazar.
+  const speed = game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : g.speed;
 
   // SPEC 02 paso 3 — espera en el pen: rebote vertical hasta que expire exitTimer.
   if ( isInPen( g ) && ( g.exitTimer || 0 ) > 0 ) {
@@ -251,8 +259,8 @@ function moveGhost( game, g ) {
       }
     }
     const d = DIRS[ g.dir ];
-    g.x += d.x * g.speed;
-    g.y += d.y * g.speed;
+    g.x += d.x * speed;
+    g.y += d.y * speed;
     return;
   }
 
@@ -264,8 +272,8 @@ function moveGhost( game, g ) {
   }
 
   const d = DIRS[ g.dir ];
-  g.x += d.x * g.speed;
-  g.y += d.y * g.speed;
+  g.x += d.x * speed;
+  g.y += d.y * speed;
   wrapTunnel( g, width );
 }
 
