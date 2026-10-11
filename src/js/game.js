@@ -19,6 +19,10 @@ const GHOST_EAT_SCORE = 200;
 const FRIGHTENED_DURATION = 600; // 10s * 60fps
 const GHOST_FRIGHTENED_SPEED = 0.0625; // 1/16: re-alinea cada 16 frames y < PACMAN_SPEED, cazables
 
+// SPEC 04 — ojos que regresan a la jaula (paso 1: constantes sin uso aún).
+const EYES_SPEED = 0.25; // 1/4: re-alinea cada 4 frames, más rápido que pacman
+const EYES_TARGET = { x: 13, y: 14 }; // interior de la jaula (puerta 3 pasable para fantasma)
+
 // SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
 // PEN incluye la fila-puerta 12: salido = y <= 11 (decisión opción 1).
 const PEN = { xMin: 11, xMax: 16, yMin: 12, yMax: 15 };
@@ -64,6 +68,7 @@ function createGame() {
       curSpeed: GHOST_SPEED, // velocidad efectiva; solo conmuta en aligned()
       kind: g.kind,
       exitTimer: GHOST_EXIT_DELAY[ g.kind ] || 0,
+      eaten: false, // SPEC 04 — true mientras viaja como ojos a la jaula
     } ) ),
   };
 }
@@ -173,6 +178,22 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
+  // SPEC 04 — ojos: viajan al interior de la jaula (antes que frightened y SPEC 02).
+  if ( g.eaten ) {
+    let best = choices[ 0 ];
+    let bestDist = Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const dist = Math.abs( ( g.x + d.x ) - EYES_TARGET.x ) + Math.abs( ( g.y + d.y ) - EYES_TARGET.y );
+      if ( dist < bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    g.dir = best;
+    return;
+  }
+
   // SPEC 03 — en frightened deambula al azar (respeta sin-180º y callejón).
   if ( game.frightenedTimer > 0 ) {
     g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
@@ -239,7 +260,7 @@ function moveGhost( game, g ) {
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
-    g.curSpeed = game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
+    g.curSpeed = g.eaten ? EYES_SPEED : game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
   }
   const speed = g.curSpeed;
 
@@ -298,6 +319,7 @@ function resetPositions( game ) {
     g.dir = 'up';
     g.curSpeed = GHOST_SPEED;
     g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
+    g.eaten = false; // SPEC 04 — morir con ojos en viaje los normaliza
   } );
 }
 
@@ -312,17 +334,26 @@ function update( game ) {
   // SPEC 03 — el modo frightened descuenta un frame por update.
   if ( game.frightenedTimer > 0 ) game.frightenedTimer--;
 
+  // SPEC 04 — los ojos que llegan a la jaula reviven con el retardo
+  // escalonado de SPEC 02.
+  for ( const g of game.ghosts ) {
+    if ( g.eaten && isInPen( g ) ) {
+      g.eaten = false;
+      g.dir = 'up';
+      g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
+    }
+  }
+
   for ( let i = 0; i < game.ghosts.length; i++ ) {
     const g = game.ghosts[ i ];
+    // SPEC 04 — los ojos en viaje no interactúan con pacman.
+    if ( g.eaten ) continue;
     if ( collides( game.pacman, g ) ) {
-      // SPEC 03 — en frightened pacman come al fantasma: +200 y respawn
-      // a su inicio con salida inmediata, sin perder vida.
+      // SPEC 04 — en frightened pacman come al fantasma: +200 y se
+      // convierte en ojos que viajan a la jaula, sin perder vida.
       if ( game.frightenedTimer > 0 ) {
         game.score += GHOST_EAT_SCORE;
-        g.x = GHOST_STARTS[ i ].x;
-        g.y = GHOST_STARTS[ i ].y;
-        g.dir = 'up';
-        g.exitTimer = 0;
+        g.eaten = true;
         continue;
       }
       game.lives--;
