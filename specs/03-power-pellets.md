@@ -1,6 +1,6 @@
 # SPEC 03 — Power-pellets y fantasmas comestibles
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01, SPEC 02
 > **Date:** 2026-10-10
 > **Objective:** Añadir 4 power-pellets en las esquinas que activan 10 segundos de modo frightened con fantasmas azules comestibles.
