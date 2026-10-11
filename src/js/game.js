@@ -333,6 +333,16 @@ function update( game ) {
   // SPEC 03 — el modo frightened descuenta un frame por update.
   if ( game.frightenedTimer > 0 ) game.frightenedTimer--;
 
+  // SPEC 04 — los ojos que llegan a la jaula reviven con el retardo
+  // escalonado de SPEC 02.
+  for ( const g of game.ghosts ) {
+    if ( g.eaten && isInPen( g ) ) {
+      g.eaten = false;
+      g.dir = 'up';
+      g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
+    }
+  }
+
   for ( let i = 0; i < game.ghosts.length; i++ ) {
     const g = game.ghosts[ i ];
     // SPEC 04 — los ojos en viaje no interactúan con pacman.
