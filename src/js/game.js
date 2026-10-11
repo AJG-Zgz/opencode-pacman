@@ -320,14 +320,11 @@ function update( game ) {
   for ( let i = 0; i < game.ghosts.length; i++ ) {
     const g = game.ghosts[ i ];
     if ( collides( game.pacman, g ) ) {
-      // SPEC 03 — en frightened pacman come al fantasma: +200 y respawn
-      // a su inicio con salida inmediata, sin perder vida.
+      // SPEC 04 — en frightened pacman come al fantasma: +200 y se
+      // convierte en ojos que viajan a la jaula, sin perder vida.
       if ( game.frightenedTimer > 0 ) {
         game.score += GHOST_EAT_SCORE;
-        g.x = GHOST_STARTS[ i ].x;
-        g.y = GHOST_STARTS[ i ].y;
-        g.dir = 'up';
-        g.exitTimer = 0;
+        g.eaten = true;
         continue;
       }
       game.lives--;
