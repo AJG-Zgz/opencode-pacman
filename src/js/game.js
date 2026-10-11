@@ -335,6 +335,8 @@ function update( game ) {
 
   for ( let i = 0; i < game.ghosts.length; i++ ) {
     const g = game.ghosts[ i ];
+    // SPEC 04 — los ojos en viaje no interactúan con pacman.
+    if ( g.eaten ) continue;
     if ( collides( game.pacman, g ) ) {
       // SPEC 04 — en frightened pacman come al fantasma: +200 y se
       // convierte en ojos que viajan a la jaula, sin perder vida.
