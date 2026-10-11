@@ -13,6 +13,12 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 
+// SPEC 03 — power-pellets y modo frightened.
+const POWER_PELLET_SCORE = 50;
+const GHOST_EAT_SCORE = 200;
+const FRIGHTENED_DURATION = 600; // 10s * 60fps
+const GHOST_FRIGHTENED_SPEED = 0.0625; // 1/16: re-alinea cada 16 frames y < PACMAN_SPEED, cazables
+
 // SPEC 02 — salida escalonada del pen (paso 1: constantes sin uso aún).
 // PEN incluye la fila-puerta 12: salido = y <= 11 (decisión opción 1).
 const PEN = { xMin: 11, xMax: 16, yMin: 12, yMax: 15 };
@@ -34,13 +40,14 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  for ( const row of grid ) for ( const v of row ) if ( v === 2 || v === 4 ) dots++;
 
   return {
     state: 'start',
     score: 0,
     lives: 3,
     dotsRemaining: dots,
+    frightenedTimer: 0, // SPEC 03 — frames restantes de modo azul
     grid,
     pacman: {
       x: PACMAN_START.x,
@@ -54,6 +61,7 @@ function createGame() {
       y: g.y,
       dir: 'up',
       speed: GHOST_SPEED,
+      curSpeed: GHOST_SPEED, // velocidad efectiva; solo conmuta en aligned()
       kind: g.kind,
       exitTimer: GHOST_EXIT_DELAY[ g.kind ] || 0,
     } ) ),
@@ -114,6 +122,13 @@ function movePacman( game ) {
       game.score += 10;
       game.dotsRemaining--;
     }
+    // SPEC 03 — comer power-pellet: activa el modo frightened.
+    if ( grid[ p.y ][ p.x ] === 4 ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += POWER_PELLET_SCORE;
+      game.dotsRemaining--;
+      game.frightenedTimer = FRIGHTENED_DURATION;
+    }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
   }
@@ -157,6 +172,12 @@ function decideGhost( game, g ) {
   );
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
+
+  // SPEC 03 — en frightened deambula al azar (respeta sin-180º y callejón).
+  if ( game.frightenedTimer > 0 ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
+  }
 
   // SPEC 02 paso 4 — dentro del pen con timer expirado: target temporal PEN_EXIT.
   // Minimiza Manhattan con la misma regla sin-180º; al salir retoma SPEC 01.
@@ -212,6 +233,15 @@ function decideGhost( game, g ) {
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
+  // SPEC 03 — la velocidad efectiva solo conmuta en el centro de la celda.
+  // Cambiarla a mitad de celda rompería aligned() y el fantasma dejaría de
+  // decidir en los cruces, atravesando muros.
+  if ( aligned( g.x ) && aligned( g.y ) ) {
+    g.x = Math.round( g.x );
+    g.y = Math.round( g.y );
+    g.curSpeed = game.frightenedTimer > 0 ? GHOST_FRIGHTENED_SPEED : GHOST_SPEED;
+  }
+  const speed = g.curSpeed;
 
   // SPEC 02 paso 3 — espera en el pen: rebote vertical hasta que expire exitTimer.
   if ( isInPen( g ) && ( g.exitTimer || 0 ) > 0 ) {
@@ -237,8 +267,8 @@ function moveGhost( game, g ) {
       }
     }
     const d = DIRS[ g.dir ];
-    g.x += d.x * g.speed;
-    g.y += d.y * g.speed;
+    g.x += d.x * speed;
+    g.y += d.y * speed;
     return;
   }
 
@@ -250,8 +280,8 @@ function moveGhost( game, g ) {
   }
 
   const d = DIRS[ g.dir ];
-  g.x += d.x * g.speed;
-  g.y += d.y * g.speed;
+  g.x += d.x * speed;
+  g.y += d.y * speed;
   wrapTunnel( g, width );
 }
 
@@ -261,10 +291,12 @@ function resetPositions( game ) {
   p.y = PACMAN_START.y;
   p.dir = 'left';
   p.nextDir = null;
+  game.frightenedTimer = 0; // SPEC 03 — morir cancela el modo azul
   game.ghosts.forEach( ( g, i ) => {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.curSpeed = GHOST_SPEED;
     g.exitTimer = GHOST_EXIT_DELAY[ g.kind ] || 0;
   } );
 }
@@ -277,8 +309,22 @@ function update( game ) {
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
-  for ( const g of game.ghosts ) {
+  // SPEC 03 — el modo frightened descuenta un frame por update.
+  if ( game.frightenedTimer > 0 ) game.frightenedTimer--;
+
+  for ( let i = 0; i < game.ghosts.length; i++ ) {
+    const g = game.ghosts[ i ];
     if ( collides( game.pacman, g ) ) {
+      // SPEC 03 — en frightened pacman come al fantasma: +200 y respawn
+      // a su inicio con salida inmediata, sin perder vida.
+      if ( game.frightenedTimer > 0 ) {
+        game.score += GHOST_EAT_SCORE;
+        g.x = GHOST_STARTS[ i ].x;
+        g.y = GHOST_STARTS[ i ].y;
+        g.dir = 'up';
+        g.exitTimer = 0;
+        continue;
+      }
       game.lives--;
       if ( game.lives <= 0 ) {
         game.state = 'lost';

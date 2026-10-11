@@ -79,6 +79,21 @@ function drawDots( ctx, grid ) {
   }
 }
 
+function drawPowerPellets( ctx, grid, frame ) {
+  // SPEC 03 — pellets grandes que pulsan con el frame.
+  ctx.fillStyle = DOT_COLOR;
+  for ( let y = 0; y < grid.length; y++ ) {
+    for ( let x = 0; x < grid[ 0 ].length; x++ ) {
+      if ( grid[ y ][ x ] !== 4 ) continue;
+      const { cx, cy } = cellCenter( x, y );
+      const r = 5 + Math.sin( frame * 0.15 ) * 1.5;
+      ctx.beginPath();
+      ctx.arc( cx, cy, r, 0, Math.PI * 2 );
+      ctx.fill();
+    }
+  }
+}
+
 function drawPacman( ctx, p, frame ) {
   const { cx, cy } = cellCenter( p.x, p.y );
   let rot = 0;
@@ -146,6 +161,19 @@ function drawHUD( ctx, game, W ) {
 
 const GHOST_COLORS = [ '#ff0000', '#ffb8ff', '#00ffff', '#ffb852' ];
 
+// SPEC 03 — azul en frightened, flash blanco los últimos 2s como aviso.
+const FRIGHT_COLOR = '#2121ff';
+const FRIGHT_FLASH_COLOR = '#ffffff';
+const FRIGHT_FLASH_AT = 120; // frames finales con parpadeo
+
+function ghostColor( game, i ) {
+  if ( ( game.frightenedTimer || 0 ) <= 0 ) return GHOST_COLORS[ i ] || '#ff0000';
+  if ( game.frightenedTimer <= FRIGHT_FLASH_AT && Math.floor( game.frightenedTimer / 15 ) % 2 === 0 ) {
+    return FRIGHT_FLASH_COLOR;
+  }
+  return FRIGHT_COLOR;
+}
+
 function draw( ctx, game, frame ) {
   const grid = game.grid;
   const W = grid[ 0 ].length;
@@ -157,8 +185,9 @@ function draw( ctx, game, frame ) {
   drawWalls( ctx, grid );
   drawDoor( ctx, grid );
   drawDots( ctx, grid );
+  drawPowerPellets( ctx, grid, frame );
   drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
+  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, ghostColor( game, i ) ) );
   drawHUD( ctx, game, W );
 }
 
